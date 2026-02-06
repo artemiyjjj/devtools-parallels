@@ -1,0 +1,62 @@
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    environment:
+      - CLUSTER_NAME=hadoop-cluster
+    volumes:
+      - namenode:/hadoop/dfs/name
+      - ./data:/data
+      - ./jars:/jars
+    env_file:
+      - ./hadoop.env
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    # container_name: datanode
+    ports:
+      - "9864:9864"
+    volumes:
+      - datanode:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+    depends_on:
+      - namenode
+    # deploy:                Won't work because this cluster model doesn't support multiple datanodes 
+    #   mode: replicated
+    #   replicas: ${WORKER_NODES:-1}
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    ports:
+      - "8088:8088"   # YARN UI
+    env_file:
+      - ./hadoop.env
+    depends_on:
+      - namenode
+
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager
+    env_file:
+      - ./hadoop.env
+    depends_on:
+      - resourcemanager
+
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: historyserver
+    ports:
+      - "8188:8188"
+    env_file:
+      - ./hadoop.env
+    depends_on:
+      - namenode
+
+volumes:
+  namenode:
+  datanode:
