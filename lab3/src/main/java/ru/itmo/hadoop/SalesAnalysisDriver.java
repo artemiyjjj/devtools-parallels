@@ -3,20 +3,25 @@ package ru.itmo.hadoop;
 import java.sql.Driver;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.NLineInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SalesAnalysisDriver {
+public class SalesAnalysisDriver extends Configured implements Tool {
     private static final Logger LOG = LoggerFactory.getLogger(Driver.class);
-    public static void main(String[] args) throws Exception {
+
+    @Override
+    public int run(String[] args) throws Exception {
         String inputPath, outputPath, metric;
-        Configuration conf = new Configuration();
+        Configuration conf = getConf();
         Job job;
         if (args.length < 3) {
             System.err.println("Usage: hadoop jar <path/to/jar> <input/path> <output/path> <metric>");
@@ -31,10 +36,11 @@ public class SalesAnalysisDriver {
             System.exit(-1);
         }
 
-        conf.set("metric", metric);
+        conf.set("metric", metric); // set before pass to job
         job = Job.getInstance(conf, "sales analysis");
-        
         job.setJarByClass(SalesAnalysisDriver.class);
+
+        job.setInputFormatClass(NLineInputFormat.class);
         job.setMapperClass(SalesMapper.class);
         // job.setCombinerClass(SalesReducer.class);
         job.setReducerClass(SalesReducer.class);
@@ -42,9 +48,15 @@ public class SalesAnalysisDriver {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);
         
-        FileInputFormat.addInputPath(job, new Path(inputPath));
+        NLineInputFormat.addInputPath(job, new Path(inputPath));
         FileOutputFormat.setOutputPath(job, new Path(outputPath));
         
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+        return job.waitForCompletion(true) ? 0 : 1;
+    }
+
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new Configuration(),
+				new SalesAnalysisDriver(), args);
+		System.exit(exitCode); 
     }
 }

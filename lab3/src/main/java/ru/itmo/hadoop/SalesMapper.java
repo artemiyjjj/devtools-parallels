@@ -17,21 +17,23 @@ public class SalesMapper extends Mapper<LongWritable, Text, Text, DoubleWritable
     @Override
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         String line = value.toString();
-        if (key.get() == 0) return; // Skip csv header
+        if (line.startsWith("transaction_id")) return;// Skip csv header
 
-        String[] fields = line.split(",");
-        if (fields.length < 5) {
-            LOG.warn("Invalid line: {}", line);
-            return;
-        } else {
-            String categoryValue = fields[2];
-            double price = Double.parseDouble(fields[3]);
-            int quantity = Integer.parseInt(fields[4]);
-            
-            category.set(categoryValue);
-            revenue.set(price * quantity);
-            
-            context.write(category, revenue);
+        try {
+            String[] fields = line.split(",");
+            if (fields.length < 5) {
+                LOG.warn("Invalid line: {}", line);
+                return;
+            } else {
+                String categoryValue = fields[2];
+                double price = Double.parseDouble(fields[3]);
+                int quantity = Integer.parseInt(fields[4]);
+                category.set(categoryValue);
+                revenue.set(price * quantity);
+                context.write(category, revenue);
+            }
+        } catch (IOException | InterruptedException | NumberFormatException e) {
+            LOG.error("Failed parse line: {}", line, e);
         }
     }
 }
