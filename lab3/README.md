@@ -7,7 +7,7 @@
 
 1. `git lfs pull`
 
-1. `./run-hadoop-job.sh`
+1. `./run-hadoop-job.sh -l <num of lines per split>`
 
 ## Цель работы
 

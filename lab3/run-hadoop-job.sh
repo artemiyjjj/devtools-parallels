@@ -6,8 +6,8 @@ EXEC_TIMESTAMP="$(date +%d/%m/%Y/%H/%M/%S)"
 
 INPUT_DIR="/input"
 OUTPUT_DIR="/output/${EXEC_TIMESTAMP}"
+TEMP_DIR="/tmp/${EXEC_TIMESTAMP}"
 WORKER_NODES="1"
-METRIC="sum"
 LINESPLIT_NUM="10000"
 REDUCERS_NUM="1"
 
@@ -28,13 +28,13 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    -w|--workers)
-      WORKER_NODES="$2"
+    -t|--tmpdir)
+      TEMP_DIR="$2"
       shift
       shift
       ;;
-    -m|--metric)
-      METRIC="$2"
+    -w|--workers)
+      WORKER_NODES="$2"
       shift
       shift
       ;;
@@ -57,6 +57,8 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+echo Line split is "${LINESPLIT_NUM}"
 
 VERSION=1.0.0
 JAR_NAME="lab3-hadoop-${VERSION}-all.jar"
@@ -82,9 +84,10 @@ while [ "$IS_PUT" == "false" ]; do
 done
 
 echo "Running MapReduce job"
-docker exec namenode bash -c "hadoop jar /jars/${JAR_NAME} ${INPUT_DIR} ${OUTPUT_DIR} ${METRIC}" \
-	-Dmapred.reduce.tasks=${REDUCERS_NUM} -Dmapreduce.input.lineinputformat.linespermap=${LINESPLIT_NUM}
+docker exec namenode bash -c "hadoop jar /jars/${JAR_NAME} ${INPUT_DIR} ${OUTPUT_DIR} ${TEMP_DIR} --linesPerMap=${LINESPLIT_NUM} \
+  -D mapreduce.job.split.metainfo.maxsize=52428800 -D mapred.reduce.tasks=${REDUCERS_NUM}"
 
 mkdir -p ./results
 echo "Job completed. Results:"
-docker exec namenode hadoop fs -cat "${OUTPUT_DIR}/*" | tail -n +2 > ./results/results.txt
+docker exec namenode hadoop fs -cat "${OUTPUT_DIR}"/* | tail -n +2 > ./results/results.txt
+cat results/results.txt
