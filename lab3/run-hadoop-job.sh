@@ -84,8 +84,8 @@ while [ "$IS_PUT" == "false" ]; do
 done
 
 echo "Running MapReduce job"
-docker exec namenode bash -c "hadoop jar /jars/${JAR_NAME} ${INPUT_DIR} ${OUTPUT_DIR} ${TEMP_DIR} --linesPerMap=${LINESPLIT_NUM} \
-  -D mapreduce.job.split.metainfo.maxsize=52428800 -D mapred.reduce.tasks=${REDUCERS_NUM}"
+time docker exec namenode bash -c "hadoop jar /jars/${JAR_NAME} ${INPUT_DIR} ${OUTPUT_DIR} ${TEMP_DIR} --linesPerMap=${LINESPLIT_NUM} \
+  -D mapreduce.job.split.metainfo.maxsize=52428800 -D mapred.reduce.tasks=${REDUCERS_NUM}" >/dev/null 2>&1
 
 mkdir -p ./results
 echo "Job completed. Results:"
